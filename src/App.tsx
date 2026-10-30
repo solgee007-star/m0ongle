@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import {
+  ChatMessage,
   CloudState,
   DailyMoodMap,
   EmergencyContact,
@@ -30,6 +31,7 @@ import {
   loadRoutineChecks,
   loadRoutines,
   loadSavedVideos,
+  loadChatMessages,
   saveBookmarkedQuotes,
   saveCloudState,
   saveEmergencyContact,
@@ -39,8 +41,11 @@ import {
   saveRoutineChecks,
   saveRoutines,
   saveSavedVideos,
+  saveChatMessages,
   setOnboardingCompleted,
   setHospitalBannerDismissedDate,
+  DEFAULT_INITIAL_CHAT_MESSAGE,
+  calculateCloudStage,
 } from './utils/storage.ts';
 import { HEALING_QUOTES } from './data/quotes.ts';
 import { checkHospitalSignal } from './utils/hospitalSignal.ts';
@@ -51,6 +56,7 @@ import { OnboardingModal } from './components/OnboardingModal.tsx';
 import { HappinessPiggyBankModal } from './components/HappinessPiggyBankModal.tsx';
 import { RoutineEditModal } from './components/RoutineEditModal.tsx';
 import { MoodTrendsModal } from './components/MoodTrendsModal.tsx';
+import { MongleCounselingModal } from './components/MongleCounselingModal.tsx';
 import { TodayTab } from './components/TodayTab.tsx';
 import { MindRecordTab } from './components/MindRecordTab.tsx';
 import { CalmKitTab } from './components/CalmKitTab.tsx';
@@ -76,15 +82,25 @@ export default function App() {
     loadEmergencyContact()
   );
 
-  // Modals
+  // Modals & Counseling
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(() => !isOnboardingCompleted());
   const [isHospitalGuideOpen, setIsHospitalGuideOpen] = useState(false);
   const [isHappinessModalOpen, setIsHappinessModalOpen] = useState(false);
   const [isRoutineEditOpen, setIsRoutineEditOpen] = useState(false);
   const [isTrendsModalOpen, setIsTrendsModalOpen] = useState(false);
   const [isBannerDismissedLocally, setIsBannerDismissedLocally] = useState(false);
+  const [isCounselingOpen, setIsCounselingOpen] = useState(false);
+
+  // 몽글이 상담소 Chat State
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => loadChatMessages());
+  const [isChatLoading, setIsChatLoading] = useState(false);
 
   const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  // Sync to localStorage
+  useEffect(() => {
+    saveChatMessages(chatMessages);
+  }, [chatMessages]);
 
   // Sync to localStorage
   useEffect(() => {
@@ -340,6 +356,72 @@ export default function App() {
     setIsBannerDismissedLocally(true);
   };
 
+  // 몽글이 상담소 Chat Handlers
+  const handleSendChatMessage = async (userText: string) => {
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      text: userText,
+      timestamp: Date.now(),
+    };
+
+    const nextMessages = [...chatMessages, userMsg];
+    setChatMessages(nextMessages);
+    setIsChatLoading(true);
+
+    try {
+      const res = await fetch('/api/counseling/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: nextMessages.map((m) => ({
+            role: m.sender === 'user' ? 'user' : 'model',
+            text: m.text,
+          })),
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+
+      const data = await res.json();
+      const replyText =
+        data.text || data.fallbackText || '내가 언제나 네 곁에 머물며 귀 기울이고 있어. ☁️';
+
+      const mongleMsg: ChatMessage = {
+        id: `mongle-${Date.now()}`,
+        sender: 'mongle',
+        text: replyText,
+        timestamp: Date.now(),
+      };
+
+      setChatMessages((prev) => [...prev, mongleMsg]);
+
+      // Give a small coin reward for opening up (+3 coins)
+      setCloudState((prev) => ({
+        ...prev,
+        coins: prev.coins + 3,
+        totalEarnedCoins: prev.totalEarnedCoins + 3,
+      }));
+    } catch (error) {
+      console.error('Chat error:', error);
+      const fallbackMsg: ChatMessage = {
+        id: `mongle-fallback-${Date.now()}`,
+        sender: 'mongle',
+        text: '지금 바람이 조금 세게 불어서 내 목소리가 잘 안 닿았나 봐. 잠깐 심호흡하고 다시 편하게 말해줄래? 언제든 네 곁에 있을게. ☁️',
+        timestamp: Date.now(),
+      };
+      setChatMessages((prev) => [...prev, fallbackMsg]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleResetChat = () => {
+    setChatMessages([DEFAULT_INITIAL_CHAT_MESSAGE]);
+  };
+
   return (
     <div className="min-h-screen bg-[#F4F8F3] text-slate-800 flex justify-center selection:bg-emerald-200">
       {/* Mobile-first Container: centered, clean padding */}
@@ -362,10 +444,18 @@ export default function App() {
             </div>
           </div>
 
-          <div className="text-right">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsCounselingOpen(true)}
+              aria-label="몽글이 상담소 열기"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-100/90 hover:bg-emerald-200/90 border border-emerald-200 text-emerald-900 rounded-xl text-xs font-semibold shadow-2xs active:scale-95 transition-all"
+            >
+              <span>💬</span>
+              <span>상담소</span>
+            </button>
             <span className="text-[11px] text-slate-500 block">
               {new Date().toLocaleDateString('ko-KR', {
-                month: 'long',
+                month: 'numeric',
                 day: 'numeric',
                 weekday: 'short',
               })}
@@ -391,6 +481,7 @@ export default function App() {
               onOpenHappinessModal={() => setIsHappinessModalOpen(true)}
               onOpenTrendsModal={() => setIsTrendsModalOpen(true)}
               onOpenHospitalGuide={() => setIsHospitalGuideOpen(true)}
+              onOpenCounseling={() => setIsCounselingOpen(true)}
             />
           )}
 
@@ -410,6 +501,7 @@ export default function App() {
               savedVideos={savedVideos}
               onAddVideo={handleAddVideo}
               onDeleteVideo={handleDeleteVideo}
+              onOpenCounseling={() => setIsCounselingOpen(true)}
             />
           )}
 
@@ -432,10 +524,31 @@ export default function App() {
           )}
         </main>
 
+        {/* Floating Quick Action Button for 몽글이 상담소 */}
+        <button
+          onClick={() => setIsCounselingOpen(true)}
+          aria-label="몽글이와 1:1 상담하기"
+          className="fixed bottom-20 right-4 sm:right-[max(1rem,calc((100vw-32rem)/2+1rem))] z-30 flex items-center gap-2 px-3.5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-full shadow-lg border border-emerald-500/30 active:scale-95 transition-all animate-gentle-float"
+        >
+          <span className="text-base">☁️</span>
+          <span className="text-xs font-bold tracking-tight">상담소 💬</span>
+        </button>
+
         {/* Bottom Tab Bar */}
         <BottomNavBar currentTab={currentTab} onSelectTab={setCurrentTab} />
 
         {/* Modals */}
+        <MongleCounselingModal
+          isOpen={isCounselingOpen}
+          onClose={() => setIsCounselingOpen(false)}
+          messages={chatMessages}
+          onSendMessage={handleSendChatMessage}
+          onResetChat={handleResetChat}
+          isLoading={isChatLoading}
+          cloudStage={calculateCloudStage(cloudState.totalEarnedCoins)}
+          onOpenHospitalGuide={() => setIsHospitalGuideOpen(true)}
+        />
+
         <OnboardingModal
           isOpen={isOnboardingOpen}
           onFinish={() => {

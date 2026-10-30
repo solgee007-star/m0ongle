@@ -41,6 +41,7 @@ interface TodayTabProps {
   onOpenHappinessModal: () => void;
   onOpenTrendsModal: () => void;
   onOpenHospitalGuide: () => void;
+  onOpenCounseling: () => void;
 }
 
 export const TodayTab: React.FC<TodayTabProps> = ({
@@ -57,6 +58,7 @@ export const TodayTab: React.FC<TodayTabProps> = ({
   onOpenRoutineEdit,
   onOpenHappinessModal,
   onOpenTrendsModal,
+  onOpenCounseling,
 }) => {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [sparkleActive, setSparkleActive] = useState(false);
@@ -263,6 +265,33 @@ export const TodayTab: React.FC<TodayTabProps> = ({
           </p>
         </div>
       </section>
+
+      {/* 몽글이 상담소 Shortcut Card */}
+      <div
+        onClick={onOpenCounseling}
+        role="button"
+        tabIndex={0}
+        aria-label="몽글이 상담소 열기"
+        className="p-3.5 bg-gradient-to-r from-emerald-50/90 via-teal-50/70 to-blue-50/60 rounded-2xl border border-emerald-200/90 shadow-2xs flex items-center justify-between cursor-pointer active:scale-98 transition-all hover:border-emerald-300"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center text-2xl shadow-2xs border border-emerald-100 shrink-0">
+            💬
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h4 className="text-xs font-bold text-slate-800">몽글이 상담소</h4>
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full">
+                AI 비밀 상담
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">혼자 앓고 있는 고민이 있다면 편하게 털어놔 봐</p>
+          </div>
+        </div>
+        <span className="text-xs font-semibold text-emerald-800 bg-white/90 border border-emerald-200 px-2.5 py-1 rounded-xl shadow-2xs">
+          상담하기 &rarr;
+        </span>
+      </div>
 
       {/* Happiness Piggy Bank Shortcut Card */}
       <div

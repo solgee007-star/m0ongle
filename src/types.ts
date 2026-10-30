@@ -103,4 +103,11 @@ export interface EmergencyContact {
   memo: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'mongle';
+  text: string;
+  timestamp: number;
+}
+
 export type TabType = 'today' | 'mind' | 'calm' | 'room' | 'more';

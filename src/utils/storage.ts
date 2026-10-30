@@ -4,6 +4,7 @@
  */
 
 import {
+  ChatMessage,
   CloudStage,
   CloudState,
   DailyMoodMap,
@@ -28,6 +29,7 @@ const KEYS = {
   EMERGENCY_CONTACT: 'mongle_emergency_contact',
   HOSPITAL_BANNER_DISMISSED: 'mongle_hospital_banner_dismissed',
   ONBOARDING_DONE: 'mongle_onboarding_done',
+  CHAT_MESSAGES: 'mongle_chat_messages',
 };
 
 // Safe JSON get
@@ -184,6 +186,22 @@ export function setOnboardingCompleted(): void {
   localStorage.setItem(KEYS.ONBOARDING_DONE, 'true');
 }
 
+// 12. Chat Messages for 몽글이 상담소
+export const DEFAULT_INITIAL_CHAT_MESSAGE: ChatMessage = {
+  id: 'mongle-welcome-chat',
+  sender: 'mongle',
+  text: '안녕! 난 네 곁에 머무는 구름 친구 몽글이야 ☁️\n오늘 마음에 걸리거나 불안하고 힘든 일이 있었니? 아무리 사소한 것이라도 좋으니 편하게 털어놓아 줘. 난 언제나 네 편이야.',
+  timestamp: Date.now(),
+};
+
+export function loadChatMessages(): ChatMessage[] {
+  return getStorageItem<ChatMessage[]>(KEYS.CHAT_MESSAGES, [DEFAULT_INITIAL_CHAT_MESSAGE]);
+}
+
+export function saveChatMessages(messages: ChatMessage[]): void {
+  setStorageItem(KEYS.CHAT_MESSAGES, messages);
+}
+
 // Helper: Clear all user data
 export function clearAllMongleData(): void {
   Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
@@ -203,6 +221,7 @@ export function exportAllDataAsJSON(): string {
     bookmarkedQuotes: loadBookmarkedQuotes(),
     savedVideos: loadSavedVideos(),
     emergencyContact: loadEmergencyContact(),
+    chatMessages: loadChatMessages(),
   };
   return JSON.stringify(data, null, 2);
 }

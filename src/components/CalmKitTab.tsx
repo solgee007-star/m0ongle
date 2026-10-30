@@ -32,6 +32,7 @@ interface CalmKitTabProps {
   savedVideos: SavedVideo[];
   onAddVideo: (video: Omit<SavedVideo, 'id' | 'addedAt'>) => void;
   onDeleteVideo: (id: string) => void;
+  onOpenCounseling?: () => void;
 }
 
 export const CalmKitTab: React.FC<CalmKitTabProps> = ({
@@ -40,6 +41,7 @@ export const CalmKitTab: React.FC<CalmKitTabProps> = ({
   savedVideos,
   onAddVideo,
   onDeleteVideo,
+  onOpenCounseling,
 }) => {
   const [subTab, setSubTab] = useState<'breath' | 'video' | 'quotes'>('breath');
 
@@ -151,11 +153,22 @@ export const CalmKitTab: React.FC<CalmKitTabProps> = ({
     <div className="space-y-4 pb-20">
       {/* Tab Header & Sub Navigation */}
       <div className="p-4 bg-white rounded-3xl border border-emerald-100 shadow-2xs space-y-3">
-        <div>
-          <h2 className="text-base font-bold text-slate-800">응급상자 (지금 마음 진정하기)</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            불안이 치솟을 때 호흡을 가다듬고 온기를 채워주는 도구들이야
-          </p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h2 className="text-base font-bold text-slate-800">응급상자 (지금 마음 진정하기)</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              불안이 치솟을 때 호흡을 가다듬고 온기를 채워주는 도구들이야
+            </p>
+          </div>
+          {onOpenCounseling && (
+            <button
+              onClick={onOpenCounseling}
+              className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center gap-1 shadow-2xs active:scale-95 transition-all shrink-0"
+            >
+              <span>💬</span>
+              <span>몽글이 상담소</span>
+            </button>
+          )}
         </div>
 
         {/* Sub-tab segmented control */}
