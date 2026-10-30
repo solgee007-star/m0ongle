@@ -1,0 +1,6 @@
+{
+  "name": "몽글 - 마음 돌봄과 일상 회복",
+  "description": "불안과 우울을 다루고 무너진 생활 리듬을 다정하게 회복하도록 돕는 셀프케어 앱",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
